@@ -1126,12 +1126,12 @@ function cleanProgramName(raw) {
 function localizedStateText(hass, entityId, raw, { rawValue = false, clean = false } = {}) {
   const value = String(raw ?? "");
   const entityDomain = domainOf(entityId);
-  if (hass && entityDomain && hass.localize) {
+  if (hass && entityDomain) {
     const translated = hass.localize(`component.${entityDomain}.state.${value}`);
     if (translated && translated !== value) return translated;
   }
   if (rawValue) return value;
-  if (clean) return cleanProgramName(value);
+//  if (clean) return cleanProgramName(value);
   return value;
 }
 
