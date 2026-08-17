@@ -1123,6 +1123,18 @@ function cleanProgramName(raw) {
     .trim();
 }
 
+function localizedStateText(hass, entityId, raw, { rawValue = false, clean = false } = {}) {
+  const value = String(raw ?? "");
+  const entityDomain = domainOf(entityId);
+  if (hass && entityDomain && hass.localize) {
+    const translated = hass.localize(`component.${entityDomain}.state.${value}`);
+    if (translated && translated !== value) return translated;
+  }
+  if (rawValue) return value;
+  if (clean) return cleanProgramName(value);
+  return value;
+}
+
 function activeAlerts(hass, entityId) {
   const st = stateObj(hass, entityId);
   if (!st) return [];
@@ -1957,9 +1969,10 @@ class ApplianceCard extends HTMLElement {
     // user's own wording.
     // Never echo the raw state when it came from the power meter: the "raw"
     // text there is a wattage, which is not a state anyone wants to read.
+    const rawStateText = String(rawState);
     const stateLabel = !powerDerived && (cfg.state_show_raw || norm === "unknown") && !rawIsMeaningless
-      ? String(rawState)
-      : t(hass, norm);
+      ? rawStateText
+      : localizedStateText(hass, cfg.state_entity, rawStateText, { rawValue: false });
 
     const name = cfg.name || (st && st.attributes.friendly_name) || cfg.state_entity;
     const applianceType = detectApplianceType(cfg, st);
@@ -1969,7 +1982,11 @@ class ApplianceCard extends HTMLElement {
     if (cfg.program_entity) {
       const pst = stateObj(hass, cfg.program_entity);
       if (pst && !["unknown", "unavailable"].includes(pst.state)) {
-        programText = cfg.program_format === "raw" ? pst.state : cleanProgramName(pst.state);
+        const raw = pst.state;
+        programText = localizedStateText(hass, cfg.program_entity, raw, {
+          rawValue: cfg.program_format === "raw",
+          clean: cfg.program_format !== "raw",
+        });
       }
     }
 
